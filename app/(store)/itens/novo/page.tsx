@@ -106,91 +106,98 @@ export default function NovoItemPage() {
   };
 
   return (
-    <div className="max-w-xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-black text-gray-900">Novo produto</h1>
-        <p className="text-gray-500 mt-1 text-sm">Adicione um produto ao cardápio</p>
+    <>
+      <div className="bg-white border-b border-amber-100">
+        <div className="max-w-2xl mx-auto px-6 sm:px-8 py-10">
+          <p className="text-amber-600 text-sm font-medium uppercase tracking-widest mb-1">Gestão</p>
+          <h1 className="font-playfair text-4xl font-bold text-amber-950">Novo Produto</h1>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
-        {erroGlobal && (
-          <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
-            {erroGlobal}
-          </div>
-        )}
+      <div className="max-w-2xl mx-auto px-6 sm:px-8 py-10">
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-amber-100 p-8 shadow-sm space-y-6">
+          {erroGlobal && (
+            <div className="px-5 py-3.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+              {erroGlobal}
+            </div>
+          )}
 
-        <Input
-          id="nome"
-          label="Nome do produto"
-          placeholder="Ex: Pão de queijo"
-          value={form.nome}
-          onChange={(e) => set("nome", e.target.value)}
-          error={erros.nome}
-          required
-        />
-
-        <Textarea
-          id="descricao"
-          label="Descrição (opcional)"
-          placeholder="Descreva o produto..."
-          value={form.descricao}
-          onChange={(e) => set("descricao", e.target.value)}
-        />
-
-        <Input
-          id="valor"
-          label="Preço (R$)"
-          placeholder="Ex: 7,50"
-          value={form.valor}
-          onChange={(e) => set("valor", e.target.value)}
-          error={erros.valor}
-          inputMode="decimal"
-          required
-        />
-
-        <div className="flex flex-col gap-1">
-          <span className="text-sm font-medium text-gray-700">Foto do produto</span>
-          <div
-            className="border-2 border-dashed border-gray-200 rounded-xl overflow-hidden cursor-pointer hover:border-amber-400 transition-colors"
-            onClick={() => fileRef.current?.click()}
-          >
-            {form.fotoPreview ? (
-              <div className="relative h-48">
-                <Image src={form.fotoPreview} alt="Prévia" fill className="object-cover" unoptimized />
-                <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                  <span className="text-white text-sm font-medium">Trocar foto</span>
+          {/* Foto upload */}
+          <div>
+            <span className="block text-sm font-semibold text-stone-700 mb-2">Foto do produto</span>
+            <div
+              className="relative rounded-xl overflow-hidden cursor-pointer border-2 border-dashed border-amber-200 hover:border-amber-400 transition-colors bg-amber-50/50"
+              onClick={() => fileRef.current?.click()}
+            >
+              {form.fotoPreview ? (
+                <div className="relative h-56">
+                  <Image src={form.fotoPreview} alt="Prévia" fill className="object-cover" unoptimized />
+                  <div className="absolute inset-0 bg-black/25 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                    <span className="text-white text-sm font-semibold bg-black/40 px-4 py-2 rounded-lg">
+                      Trocar foto
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="h-32 flex flex-col items-center justify-center text-gray-400 gap-2">
-                <span className="text-3xl">📷</span>
-                <span className="text-sm">Clique para adicionar uma foto</span>
-              </div>
-            )}
+              ) : (
+                <div className="h-40 flex flex-col items-center justify-center gap-3 text-amber-400">
+                  <span className="text-4xl">📷</span>
+                  <span className="text-sm font-medium">Clique para adicionar uma foto</span>
+                </div>
+              )}
+            </div>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleFoto}
+              className="hidden"
+            />
           </div>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={handleFoto}
-            className="hidden"
-          />
-        </div>
 
-        <div className="flex gap-3 pt-2">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => router.back()}
-            disabled={salvando}
-          >
-            Cancelar
-          </Button>
-          <Button type="submit" loading={salvando} className="flex-1">
-            {salvando ? "Salvando..." : "Salvar produto"}
-          </Button>
-        </div>
-      </form>
-    </div>
+          <Input
+            id="nome"
+            label="Nome do produto"
+            placeholder="Ex: Pão de queijo"
+            value={form.nome}
+            onChange={(e) => set("nome", e.target.value)}
+            error={erros.nome}
+            required
+          />
+
+          <Textarea
+            id="descricao"
+            label="Descrição (opcional)"
+            placeholder="Descreva brevemente o produto..."
+            value={form.descricao}
+            onChange={(e) => set("descricao", e.target.value)}
+          />
+
+          <Input
+            id="valor"
+            label="Preço (R$)"
+            placeholder="Ex: 7,50"
+            value={form.valor}
+            onChange={(e) => set("valor", e.target.value)}
+            error={erros.valor}
+            inputMode="decimal"
+            required
+          />
+
+          <div className="flex gap-3 pt-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => router.back()}
+              disabled={salvando}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" loading={salvando} className="flex-1">
+              {salvando ? "Salvando..." : "Salvar produto"}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </>
   );
 }

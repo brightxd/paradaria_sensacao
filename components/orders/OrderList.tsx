@@ -11,9 +11,10 @@ interface OrderListProps {
 export function OrderList({ pedidos }: OrderListProps) {
   if (pedidos.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <span className="text-5xl mb-3">📋</span>
-        <p className="text-gray-500">Nenhum pedido encontrado.</p>
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <span className="text-6xl mb-4">📋</span>
+        <h3 className="font-playfair text-xl font-bold text-amber-950">Nenhum pedido ainda</h3>
+        <p className="text-stone-500 mt-2 text-sm">Os pedidos aparecerão aqui assim que forem feitos.</p>
       </div>
     );
   }
@@ -23,25 +24,29 @@ export function OrderList({ pedidos }: OrderListProps) {
       {pedidos.map((pedido) => (
         <div
           key={pedido.id}
-          className="bg-white rounded-2xl border border-gray-100 px-5 py-4 flex items-center gap-4 hover:shadow-sm transition-shadow"
+          className="bg-white rounded-2xl border border-amber-100 px-6 py-5 flex items-center gap-5 hover:shadow-md transition-all"
         >
+          <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-xl shrink-0">
+            🛍️
+          </div>
+
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <p className="font-semibold text-gray-900">{pedido.clienteNome}</p>
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <p className="font-playfair font-bold text-amber-950">{pedido.clienteNome}</p>
               <StatusBadge status={pedido.status} />
             </div>
-            <p className="text-xs text-gray-400 mt-0.5 font-mono">
+            <p className="text-xs text-stone-400 mt-0.5 font-mono tracking-wide">
               #{pedido.id.slice(0, 8).toUpperCase()}
             </p>
           </div>
 
           <div className="text-right shrink-0">
             {pedido.totalCents != null ? (
-              <p className="font-bold text-amber-600">{formatarReais(pedido.totalCents)}</p>
+              <p className="font-playfair font-bold text-amber-800 text-lg">{formatarReais(pedido.totalCents)}</p>
             ) : (
-              <p className="text-sm text-gray-400 italic">calculando...</p>
+              <p className="text-sm text-stone-400 italic">calculando...</p>
             )}
-            <p className="text-xs text-gray-400 mt-0.5">
+            <p className="text-xs text-stone-400 mt-0.5">
               {new Date(pedido.criadoEm).toLocaleString("pt-BR", {
                 day: "2-digit",
                 month: "2-digit",

@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+const UNSPLASH = "images.unsplash.com";
+
 const securityHeaders = [
   { key: "X-DNS-Prefetch-Control", value: "on" },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
@@ -14,8 +16,8 @@ const securityHeaders = [
       "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' data: blob: https://*.amazonaws.com",
-      "connect-src 'self' https://*.amazonaws.com",
+      `img-src 'self' data: blob: https://*.amazonaws.com https://${UNSPLASH}`,
+      `connect-src 'self' https://*.amazonaws.com https://${UNSPLASH}`,
       "frame-ancestors 'none'",
     ].join("; "),
   },
@@ -36,10 +38,11 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "*.amazonaws.com",
       },
+      {
+        protocol: "https",
+        hostname: UNSPLASH,
+      },
     ],
-  },
-  experimental: {
-    serverActions: { allowedOrigins: ["localhost:3000"] },
   },
 };
 

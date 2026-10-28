@@ -27,7 +27,7 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   if (pathname.startsWith("/api/")) {

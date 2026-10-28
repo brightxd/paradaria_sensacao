@@ -10,18 +10,18 @@ interface ProductGridProps {
 }
 
 export function ProductGrid({ itens, onAdicionarAoCarrinho }: ProductGridProps) {
-  if (itens.length === 0) {
+  if (!itens || itens.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <span className="text-6xl mb-4">🥐</span>
-        <h3 className="text-lg font-semibold text-gray-700">Nenhum produto cadastrado</h3>
-        <p className="text-gray-500 mt-1 text-sm">Aguarde a padaria adicionar os produtos.</p>
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <span className="text-7xl mb-5">🥐</span>
+        <h3 className="font-playfair text-xl font-bold text-amber-950">Nenhum produto ainda</h3>
+        <p className="text-stone-500 mt-2 text-sm">Aguarde a padaria adicionar os produtos ao cardápio.</p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
       {itens.map((item) => (
         <ProductCard
           key={item.id}

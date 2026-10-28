@@ -20,31 +20,33 @@ export default function CheckoutPage() {
 
   if (pedidoId) {
     return (
-      <div className="max-w-lg mx-auto text-center py-16">
-        <div className="text-7xl mb-6">🎉</div>
-        <h1 className="text-2xl font-black text-gray-900">Pedido recebido!</h1>
-        <p className="text-gray-500 mt-2">
-          Você receberá um e-mail de confirmação em breve.
-        </p>
-        <div className="mt-4 bg-amber-50 border border-amber-200 rounded-2xl px-6 py-4 inline-block">
-          <p className="text-xs text-amber-600 font-mono">Pedido</p>
-          <p className="font-bold text-amber-800 text-lg tracking-widest">
-            #{pedidoId.slice(0, 8).toUpperCase()}
+      <div className="min-h-[70vh] flex items-center justify-center px-6">
+        <div className="max-w-md w-full text-center py-16">
+          <div className="text-7xl mb-6">🎉</div>
+          <h1 className="font-playfair text-3xl font-bold text-amber-950">Pedido recebido!</h1>
+          <p className="text-stone-500 mt-3">
+            Você receberá um e-mail de confirmação assim que seu pedido for processado.
           </p>
-        </div>
-        <div className="mt-8 flex gap-3 justify-center">
-          <Link
-            href="/pedidos"
-            className="px-6 py-3 rounded-xl font-semibold bg-amber-600 text-white hover:bg-amber-700 transition-colors"
-          >
-            Acompanhar pedido
-          </Link>
-          <Link
-            href="/itens"
-            className="px-6 py-3 rounded-xl font-semibold bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 transition-colors"
-          >
-            Ver cardápio
-          </Link>
+          <div className="mt-6 bg-amber-50 border border-amber-200 rounded-2xl px-8 py-5 inline-block">
+            <p className="text-xs text-amber-600 font-semibold uppercase tracking-widest mb-1">Número do pedido</p>
+            <p className="font-playfair font-bold text-amber-900 text-2xl tracking-widest">
+              #{pedidoId.slice(0, 8).toUpperCase()}
+            </p>
+          </div>
+          <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              href="/pedidos"
+              className="px-6 py-3 rounded-xl font-semibold bg-amber-700 text-white hover:bg-amber-800 transition-colors"
+            >
+              Acompanhar pedido
+            </Link>
+            <Link
+              href="/itens"
+              className="px-6 py-3 rounded-xl font-semibold bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 transition-colors"
+            >
+              Ver cardápio
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -52,15 +54,18 @@ export default function CheckoutPage() {
 
   if (itens.length === 0) {
     return (
-      <div className="max-w-lg mx-auto text-center py-16">
-        <div className="text-6xl mb-4">🛒</div>
-        <h2 className="text-xl font-bold text-gray-700">Seu pedido está vazio</h2>
-        <Link
-          href="/itens"
-          className="mt-4 inline-block px-6 py-3 rounded-xl font-semibold bg-amber-600 text-white hover:bg-amber-700 transition-colors"
-        >
-          Ver cardápio
-        </Link>
+      <div className="min-h-[70vh] flex items-center justify-center px-6">
+        <div className="text-center">
+          <div className="text-7xl mb-5">🛒</div>
+          <h2 className="font-playfair text-2xl font-bold text-amber-950 mb-2">Seu pedido está vazio</h2>
+          <p className="text-stone-500 mb-6">Escolha produtos no cardápio para continuar.</p>
+          <Link
+            href="/itens"
+            className="px-7 py-3 rounded-xl font-semibold bg-amber-700 text-white hover:bg-amber-800 transition-colors"
+          >
+            Ver cardápio
+          </Link>
+        </div>
       </div>
     );
   }
@@ -105,69 +110,76 @@ export default function CheckoutPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-black text-gray-900">Finalizar pedido</h1>
-        <p className="text-gray-500 mt-1 text-sm">Revise os itens e informe seus dados</p>
+    <>
+      <div className="bg-white border-b border-amber-100">
+        <div className="max-w-4xl mx-auto px-6 sm:px-8 py-10">
+          <p className="text-amber-600 text-sm font-medium uppercase tracking-widest mb-1">Finalizar</p>
+          <h1 className="font-playfair text-4xl font-bold text-amber-950">Meu Pedido</h1>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <h2 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Seu pedido</h2>
-          <CartSummary itens={itens} total={total} onRemover={remover} />
-        </div>
-
-        <div className="bg-white rounded-2xl border border-gray-100 p-6">
-          <h2 className="font-semibold text-gray-700 mb-4 text-sm uppercase tracking-wide">Seus dados</h2>
-
-          {erro && (
-            <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
-              {erro}
-            </div>
-          )}
-
-          <div className="space-y-4">
-            <Input
-              id="nome"
-              label="Nome completo"
-              placeholder="Seu nome"
-              value={nome}
-              onChange={(e) => {
-                setNome(e.target.value);
-                setErros((e2) => ({ ...e2, nome: undefined }));
-              }}
-              error={erros.nome}
-              required
-            />
-            <Input
-              id="email"
-              type="email"
-              label="E-mail"
-              placeholder="seu@email.com"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setErros((e2) => ({ ...e2, email: undefined }));
-              }}
-              error={erros.email}
-              required
-            />
+      <div className="max-w-4xl mx-auto px-6 sm:px-8 py-10">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
+          {/* Cart */}
+          <div className="md:col-span-3">
+            <h2 className="font-semibold text-stone-600 mb-4 text-xs uppercase tracking-widest">Itens selecionados</h2>
+            <CartSummary itens={itens} total={total} onRemover={remover} />
           </div>
 
-          <Button
-            className="w-full mt-6"
-            size="lg"
-            onClick={handleFinalizarPedido}
-            loading={enviando}
-            disabled={itens.length === 0}
-          >
-            {enviando ? "Enviando..." : "Finalizar pedido"}
-          </Button>
-          <p className="text-xs text-gray-400 text-center mt-3">
-            Você receberá um e-mail de confirmação
-          </p>
+          {/* Form */}
+          <div className="md:col-span-2">
+            <h2 className="font-semibold text-stone-600 mb-4 text-xs uppercase tracking-widest">Seus dados</h2>
+            <div className="bg-white rounded-2xl border border-amber-100 p-6 shadow-sm">
+              {erro && (
+                <div className="mb-5 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+                  {erro}
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <Input
+                  id="nome"
+                  label="Nome completo"
+                  placeholder="Seu nome"
+                  value={nome}
+                  onChange={(e) => {
+                    setNome(e.target.value);
+                    setErros((e2) => ({ ...e2, nome: undefined }));
+                  }}
+                  error={erros.nome}
+                  required
+                />
+                <Input
+                  id="email"
+                  type="email"
+                  label="E-mail para confirmação"
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setErros((e2) => ({ ...e2, email: undefined }));
+                  }}
+                  error={erros.email}
+                  required
+                />
+              </div>
+
+              <Button
+                className="w-full mt-6"
+                size="lg"
+                onClick={handleFinalizarPedido}
+                loading={enviando}
+                disabled={itens.length === 0}
+              >
+                {enviando ? "Enviando..." : "Finalizar pedido"}
+              </Button>
+              <p className="text-xs text-stone-400 text-center mt-3">
+                Você receberá um e-mail de confirmação
+              </p>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
