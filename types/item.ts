@@ -3,7 +3,7 @@ export interface Item {
   nome: string;
   descricao: string;
   valorCents: number;
-  fotoKey?: string;
+  fotoKey?: string | null;
   criadoEm: string;
 }
 
@@ -15,5 +15,5 @@ export interface CriarItemInput {
   nome: string;
   descricao: string;
   valorCents: number;
-  fotoKey?: string;
+  fotoKey?: string | null;
 }
