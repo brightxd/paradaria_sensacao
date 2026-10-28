@@ -1,9 +1,7 @@
-import { lerObjeto, gravarObjeto } from "@/lib/store";
+import { getPool } from "@/lib/db";
 import { enfileirarPedido } from "@/lib/sqs";
 import { checkoutSchema } from "@/lib/validation";
 import { ZodError } from "zod";
-import type { Item } from "@/types/item";
-import type { Pedido } from "@/types/pedido";
 
 export const runtime = "nodejs";
 
@@ -12,32 +10,33 @@ export async function POST(req: Request): Promise<Response> {
     const body = await req.json();
     const { nome, email, itens } = checkoutSchema.parse(body);
 
-    const itensDoPedido = await Promise.all(
-      itens.map(async ({ itemId, quantidade }) => {
-        const { dado } = await lerObjeto<Item>(`itens/${itemId}.json`);
-        return {
-          itemId,
-          nome: dado.nome,
-          quantidade,
-          valorCents: dado.valorCents,
-        };
-      }),
+    const db = getPool();
+
+    const ids = itens.map((i) => i.itemId);
+    const { rows: dbItens } = await db.query(
+      "SELECT id, nome, valor_cents FROM itens WHERE id = ANY($1)",
+      [ids],
     );
 
-    const pedido: Pedido = {
-      id: crypto.randomUUID(),
-      cliente: { nome, email },
-      itens: itensDoPedido,
-      totalCents: null,
-      status: "recebido",
-      criadoEm: new Date().toISOString(),
-      confirmadoEm: null,
-    };
+    const mapa = new Map(dbItens.map((i) => [i.id as string, i]));
+    const pedidoId = crypto.randomUUID();
 
-    await gravarObjeto(`pedidos/${pedido.id}.json`, pedido);
-    await enfileirarPedido(pedido.id);
+    await db.query(
+      "INSERT INTO pedidos (id, cliente_nome, cliente_email) VALUES ($1, $2, $3)",
+      [pedidoId, nome, email],
+    );
 
-    return Response.json({ pedidoId: pedido.id }, { status: 202 });
+    for (const { itemId, quantidade } of itens) {
+      const item = mapa.get(itemId);
+      if (!item) throw new Error(`Item ${itemId} não encontrado.`);
+      await db.query(
+        "INSERT INTO pedido_itens (pedido_id, item_id, nome, quantidade, valor_cents) VALUES ($1, $2, $3, $4, $5)",
+        [pedidoId, itemId, item.nome, quantidade, item.valor_cents],
+      );
+    }
+
+    await enfileirarPedido(pedidoId);
+    return Response.json({ pedidoId }, { status: 202 });
   } catch (error) {
     if (error instanceof ZodError) {
       return Response.json({ erro: error.errors[0].message }, { status: 400 });
