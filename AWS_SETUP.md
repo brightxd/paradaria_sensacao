@@ -85,6 +85,30 @@ AWS_SECRET_ACCESS_KEY= ← cole o "Secret access key"
 
 ✅ `.env.local` atualizado com as duas chaves.
 
+### 1.5 Adicionar colegas do grupo
+
+Existem duas abordagens:
+
+#### Opção A — Compartilhar as mesmas credenciais (mais simples)
+
+Repasse o `AWS_ACCESS_KEY_ID` e `AWS_SECRET_ACCESS_KEY` gerados no passo 1.4 para cada colega. Cada um preenche no próprio `.env.local`. Adequado para projetos acadêmicos.
+
+> Não compartilhe credenciais por canais públicos — use DM ou grupo privado.
+
+#### Opção B — Um usuário IAM por pessoa (mais correto)
+
+Para cada colega:
+
+1. **IAM** → **Users** → **Create user**
+2. **User name:** `padaria-dev-NOME` (ex: `padaria-dev-ana`)
+3. **Provide user access to the AWS Management Console:** deixe **desmarcado**
+4. **Next** → **Add user to group** → selecione `padaria-app-GRUPO` → **Next** → **Create user**
+5. Clique no usuário → aba **Security credentials** → **Create access key**
+6. **Use case:** Application running outside AWS → **Create access key**
+7. Passe o par de chaves para o colega preencher no `.env.local`
+
+Para revogar acesso: IAM → Users → usuário → Security credentials → **Delete** a access key.
+
 ---
 
 ## Passo 2 — RDS (banco de dados PostgreSQL)
@@ -128,19 +152,13 @@ DATABASE_URL=postgresql://padaria:SUA_SENHA@padaria-GRUPO.c9xyz.us-east-1.rds.am
 
 ### 2.4 Criar as tabelas (schema)
 
-Com o banco criado, execute o schema SQL do projeto. No terminal do projeto:
+Com o banco criado, execute o script de migração no terminal do projeto:
 
 ```bash
-npx ts-node -e "
-const { Pool } = require('pg');
-const fs = require('fs');
-const sql = fs.readFileSync('lib/schema.sql', 'utf8');
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-pool.query(sql).then(() => { console.log('Schema criado!'); pool.end(); });
-" --skip-project
+node scripts/migrate.cjs
 ```
 
-Ou use qualquer cliente PostgreSQL (DBeaver, TablePlus, psql) com a `DATABASE_URL`.
+> Requer `DATABASE_URL` preenchido no `.env.local` — o script lê automaticamente.
 
 ✅ Banco pronto. Neste ponto o app já funciona localmente (mock desaparece, dados vão pro banco).
 

@@ -1,7 +1,7 @@
 import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-export const s3 = new S3Client({ region: process.env.AWS_REGION ?? "us-east-1" });
+export const s3 = new S3Client({ region: "us-east-1" });
 export const BUCKET = process.env.S3_BUCKET!;
 
 const TIPOS_PERMITIDOS: Record<string, string> = {

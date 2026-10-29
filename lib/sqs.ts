@@ -1,6 +1,6 @@
 import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 
-const sqs = new SQSClient({ region: process.env.AWS_REGION ?? "us-east-1" });
+const sqs = new SQSClient({ region: "us-east-1" });
 
 export function enfileirarPedido(pedidoId: string): Promise<unknown> {
   return sqs.send(

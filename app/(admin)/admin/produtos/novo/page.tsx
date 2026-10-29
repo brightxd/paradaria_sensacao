@@ -65,7 +65,10 @@ export default function AdminNovoProdutoPage() {
         if (!urlRes.ok) throw new Error("Erro ao obter URL de upload.");
         const { uploadUrl, fotoKey: key } = await urlRes.json();
         const uploadRes = await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": form.foto.type }, body: form.foto });
-        if (!uploadRes.ok) throw new Error("Erro ao enviar foto.");
+        if (!uploadRes.ok) {
+          const txt = await uploadRes.text().catch(() => "");
+          throw new Error(`S3 ${uploadRes.status}: ${txt.slice(0, 200)}`);
+        }
         fotoKey = key;
       }
 

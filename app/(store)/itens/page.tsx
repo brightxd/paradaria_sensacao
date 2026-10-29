@@ -42,12 +42,6 @@ export default function ItensPage() {
             <p className="text-amber-600 text-sm font-medium uppercase tracking-widest mb-1">Padaria 100sação</p>
             <h1 className="font-playfair text-4xl font-bold text-amber-950">Cardápio</h1>
           </div>
-          <Link
-            href="/itens/novo"
-            className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-amber-700 text-white hover:bg-amber-800 transition-colors shadow-sm"
-          >
-            + Novo produto
-          </Link>
         </div>
       </div>
 

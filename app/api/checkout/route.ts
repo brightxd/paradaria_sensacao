@@ -41,6 +41,7 @@ export async function POST(req: Request): Promise<Response> {
     if (error instanceof ZodError) {
       return Response.json({ erro: error.errors[0].message }, { status: 400 });
     }
+    console.error("[checkout]", error);
     const msg = error instanceof Error ? error.message : "Erro ao processar pedido.";
     return Response.json({ erro: msg }, { status: 500 });
   }

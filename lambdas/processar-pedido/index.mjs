@@ -8,7 +8,7 @@ const sns = new SNSClient({});
 
 let pool;
 function getPool() {
-  if (!pool) pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  if (!pool) pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
   return pool;
 }
 

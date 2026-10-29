@@ -16,7 +16,9 @@ export function usePedidos() {
       const res = await fetch("/api/pedidos");
       if (!res.ok) throw new Error("Falha ao carregar pedidos.");
       const { pedidos: lista } = (await res.json()) as { pedidos: PedidoResumo[] };
-      setPedidos(lista);
+      setPedidos((prev) =>
+        JSON.stringify(prev) === JSON.stringify(lista) ? prev : lista,
+      );
       setErro(null);
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro desconhecido.");
