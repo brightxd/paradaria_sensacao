@@ -438,15 +438,3 @@ Browser
                                                                           Lambda enviar-email
                                                                                     └─ SendEmail ── SES → caixa do cliente
 ```
-
----
-
-## Limpeza após a entrega
-
-1. Lambdas `enviar-email-GRUPO` e `processar-pedido-GRUPO`
-2. Subscription do SNS → Tópico `pedido-confirmado-GRUPO`
-3. Filas SQS `pedidos-GRUPO` e `pedidos-dlq-GRUPO`
-4. Identidades verificadas no SES
-5. Bucket S3 `padaria-GRUPO` (esvazie antes de deletar)
-6. Banco RDS `padaria-GRUPO` (confirme backup desabilitado antes de deletar)
-7. Usuário IAM `padaria-app-GRUPO` → Grupo `padaria-app-GRUPO`
