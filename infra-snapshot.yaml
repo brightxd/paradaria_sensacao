@@ -1,0 +1,337 @@
+# Snapshot de infraestrutura AWS — Padaria 100sação
+# Grupo de referência: g1 | Conta: 240748836871 | Região: us-east-1
+#
+# Como usar: troque "g1" pelo identificador do seu grupo em todos os campos.
+# Os valores abaixo são os reais usados no g1 — servem como gabarito.
+
+meta:
+  projeto: padaria-100sacao
+  grupo: g1                          # ← trocar
+  regiao: us-east-1                  # fixo — todos os recursos nessa região
+  conta: "240748836871"              # ← trocar pelo Account ID da sua conta AWS
+  trilha: A                          # Trilha A = RDS PostgreSQL
+
+# ─────────────────────────────────────────────────────────────
+# 1. IAM
+# Console: IAM → User groups / Users
+# ─────────────────────────────────────────────────────────────
+iam:
+  grupo:
+    nome: padaria-app-g1             # ← trocar g1
+    politica_inline:
+      nome: padaria-app-policy-g1    # ← trocar g1
+      # GOTCHA: o Resource do SQS deve ser ARN de SQS, não de S3.
+      # Erro comum: colar o ARN do bucket no lugar do ARN da fila.
+      json: |
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": ["s3:PutObject", "s3:GetObject"],
+              "Resource": "arn:aws:s3:::padaria-g1/fotos/*"
+            },
+            {
+              "Effect": "Allow",
+              "Action": "s3:ListBucket",
+              "Resource": "arn:aws:s3:::padaria-g1"
+            },
+            {
+              "Effect": "Allow",
+              "Action": ["sqs:SendMessage", "sqs:GetQueueAttributes"],
+              "Resource": "arn:aws:sqs:us-east-1:240748836871:pedidos-g1"
+                          # ↑ formato: arn:aws:sqs:REGIAO:CONTA:NOME_DA_FILA
+            }
+          ]
+        }
+
+  usuario_app:
+    nome: padaria-app-g1             # ← trocar g1
+    console_access: false            # sem login no console
+    grupo: padaria-app-g1
+    # Após criar: Security credentials → Create access key → Application running outside AWS
+    gera_env:
+      AWS_ACCESS_KEY_ID: "<access key gerada>"
+      AWS_SECRET_ACCESS_KEY: "<secret key gerada>"
+
+# ─────────────────────────────────────────────────────────────
+# 2. RDS (PostgreSQL)
+# Console: RDS → Databases
+# ─────────────────────────────────────────────────────────────
+rds:
+  identificador: padaria-g1          # ← trocar g1
+  engine: postgres
+  template: free-tier
+  usuario: padaria
+  senha: "Padaria!2026"             # ← trocar por senha forte
+  banco_inicial: postgres            # campo "Initial database name" em Additional configuration
+  acesso_publico: true               # necessário sem VPC; em prod restringir
+  porta: 5432
+
+  security_group:
+    nome: padaria-rds-sg-g1          # criado automaticamente
+    inbound_rules:
+      - tipo: PostgreSQL
+        porta: 5432
+        origem: 0.0.0.0/0            # ← em prod: restringir ao IP do servidor
+
+  endpoint_exemplo: padaria-g1.cszcff9xtlph.us-east-1.rds.amazonaws.com
+  # ↑ visível em RDS → Databases → seu banco → Connectivity & security
+
+  gera_env:
+    DATABASE_URL: "postgresql://padaria:Padaria!2026@<endpoint>:5432/postgres"
+    #                                                              ↑ "postgres" é o banco padrão;
+    #                                                              trocar se usou outro nome em Initial database name
+
+  # GOTCHA: RDS exige SSL — sem isso a conexão falha com:
+  #   "no pg_hba.conf entry ... no encryption"
+  # Solução: ssl: { rejectUnauthorized: false } em TODO lugar que conecta ao banco:
+  ssl_obrigatorio:
+    next_app: lib/db.ts              # Pool({ connectionString, ssl: { rejectUnauthorized: false } })
+    lambda:   lambdas/processar-pedido/index.mjs  # mesmo padrão
+
+  migracao:
+    comando: node scripts/migrate.cjs
+    requer: DATABASE_URL preenchido no .env.local
+
+# ─────────────────────────────────────────────────────────────
+# 3. S3
+# Console: S3 → Buckets
+# ─────────────────────────────────────────────────────────────
+s3:
+  bucket: padaria-g1                 # ← trocar g1 (deve ser globalmente único — adicione números se necessário)
+  regiao: us-east-1
+  acesso_publico: bloqueado          # Block all public access = ON
+
+  cors:
+    # Console: bucket → Permissions → Cross-origin resource sharing (CORS) → Edit
+    # GOTCHA: AllowedOrigins com "https://*" NÃO funciona — precisa da URL exata.
+    # Adicione cada origem que fará upload de fotos.
+    json: |
+      [
+        {
+          "AllowedHeaders": ["*"],
+          "AllowedMethods": ["PUT"],
+          "AllowedOrigins": [
+            "http://localhost:3000",
+            "https://SEU-DOMINIO.vercel.app"
+          ],
+          "ExposeHeaders": ["ETag"]
+        }
+      ]
+
+  # GOTCHA: AWS SDK v3 lê AWS_REGION em tempo de inicialização do módulo.
+  # Se a variável vier como string vazia do .env, ?? e || não ajudam — o SDK
+  # usa "" como região e gera URLs tipo s3.nothing.amazonaws.com.
+  # Solução: hardcodar a região no cliente, não ler do env:
+  #   lib/s3.ts  → new S3Client({ region: "us-east-1" })   ← NÃO process.env.AWS_REGION
+  #   lib/sqs.ts → new SQSClient({ region: "us-east-1" })  ← mesmo motivo
+  regiao_hardcoded_em:
+    - lib/s3.ts
+    - lib/sqs.ts
+
+  gera_env:
+    S3_BUCKET: padaria-g1
+
+# ─────────────────────────────────────────────────────────────
+# 4. SES
+# Console: Amazon SES → Verified identities
+# ─────────────────────────────────────────────────────────────
+ses:
+  modo: sandbox                      # padrão de contas novas — só envia para e-mails verificados
+  identidades_verificadas:
+    - seuemail@gmail.com             # remetente (SES_FROM na Lambda)
+    - destinatario@gmail.com         # pelo menos um para teste
+  # Cada e-mail recebe um link de verificação — deve clicar para ativar.
+  # Para sair do sandbox: SES → Account dashboard → Request production access
+
+# ─────────────────────────────────────────────────────────────
+# 5. SQS
+# Console: Amazon SQS → Queues
+# Ordem: criar DLQ primeiro, depois a fila principal
+# ─────────────────────────────────────────────────────────────
+sqs:
+  dlq:
+    nome: pedidos-dlq-g1             # ← trocar g1
+    tipo: Standard
+    configuracao: padrões
+
+  fila_principal:
+    nome: pedidos-g1                 # ← trocar g1
+    tipo: Standard
+    visibility_timeout: 60s          # deve ser >= timeout da Lambda (30s)
+    dead_letter_queue: pedidos-dlq-g1
+    maximum_receives: 3              # após 3 falhas, mensagem vai para a DLQ
+
+    url_exemplo: "https://sqs.us-east-1.amazonaws.com/240748836871/pedidos-g1"
+    arn_exemplo:  "arn:aws:sqs:us-east-1:240748836871:pedidos-g1"
+    # ↑ URL visível em SQS → Queues → sua fila → Details
+
+  gera_env:
+    SQS_QUEUE_URL: "https://sqs.us-east-1.amazonaws.com/<conta>/pedidos-g1"
+
+# ─────────────────────────────────────────────────────────────
+# 6. Lambda: processar-pedido
+# Console: Lambda → Functions
+# ─────────────────────────────────────────────────────────────
+lambda_processar_pedido:
+  nome: processar-pedido-g1          # ← trocar g1
+  runtime: nodejs22.x
+  handler: index.handler
+  timeout: 30s
+  architecture: x86_64
+
+  deploy:
+    tipo: zip                        # obrigatório — usa pg, que não está no runtime nativo
+    como_gerar: |
+      cd lambdas/processar-pedido
+      npm install
+      zip -r ../../processar-pedido.zip .
+      cd ../..
+    upload: Lambda → Code → Upload from → .zip file
+
+  variaveis_de_ambiente:
+    # Console: Configuration → Environment variables → Edit
+    DATABASE_URL: "postgresql://padaria:Padaria!2026@<endpoint-rds>:5432/postgres"
+    SNS_TOPIC_ARN: "arn:aws:sns:us-east-1:<conta>:pedido-confirmado-g1"
+    # ↑ SNS_TOPIC_ARN só existe após criar o tópico SNS (passo 7) — preencher depois
+
+  permissoes:
+    policy_gerenciada: AWSLambdaSQSQueueExecutionRole
+    # Adicionar via: Configuration → Permissions → Execution role → Add permissions → Attach policies
+    policy_inline:
+      nome: processar-pedido-policy
+      # Adicionar via: Add permissions → Create inline policy → JSON
+      json: |
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "sns:Publish",
+              "Resource": "*"
+            }
+          ]
+        }
+
+  trigger:
+    tipo: SQS
+    fila: pedidos-g1
+    batch_size: 1
+    # Console: Configuration → Triggers → Add trigger → SQS
+
+  # GOTCHA: DATABASE_URL na Lambda precisa de SSL explícito no código.
+  # Não basta ter ?sslmode=require na URL — o pg Pool aceita mas o RDS rejeita
+  # se o objeto de conexão não tiver ssl: { rejectUnauthorized: false }.
+  # Ver: lambdas/processar-pedido/index.mjs → função getPool()
+
+# ─────────────────────────────────────────────────────────────
+# 7. SNS
+# Console: Amazon SNS → Topics
+# ─────────────────────────────────────────────────────────────
+sns:
+  topico:
+    nome: pedido-confirmado-g1       # ← trocar g1
+    tipo: Standard
+    arn_exemplo: "arn:aws:sns:us-east-1:240748836871:pedido-confirmado-g1"
+
+  # Após criar: copiar o ARN e colar em SNS_TOPIC_ARN na Lambda processar-pedido
+
+# ─────────────────────────────────────────────────────────────
+# 8. Lambda: enviar-email
+# Console: Lambda → Functions
+# ─────────────────────────────────────────────────────────────
+lambda_enviar_email:
+  nome: enviar-email-g1              # ← trocar g1
+  runtime: nodejs22.x
+  handler: index.handler
+  timeout: 10s                       # padrão é suficiente
+
+  deploy:
+    tipo: inline                     # não usa dependências extras — cole direto no editor
+    arquivo_fonte: lambdas/enviar-email/index.mjs
+
+  variaveis_de_ambiente:
+    SES_FROM: "seuemail@gmail.com"   # ← e-mail verificado no SES
+
+  permissoes:
+    policy_inline:
+      nome: enviar-email-policy
+      json: |
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            { "Effect": "Allow", "Action": "ses:SendEmail", "Resource": "*" }
+          ]
+        }
+
+  assinatura_sns:
+    topico: pedido-confirmado-g1
+    protocolo: AWS Lambda
+    endpoint: enviar-email-g1
+    # Console: SNS → Topics → pedido-confirmado-g1 → Subscriptions → Create subscription
+
+# ─────────────────────────────────────────────────────────────
+# .env.local completo (nunca commitar)
+# ─────────────────────────────────────────────────────────────
+env_local:
+  AWS_REGION: us-east-1
+  AWS_ACCESS_KEY_ID: "<passo 1 — IAM access key>"
+  AWS_SECRET_ACCESS_KEY: "<passo 1 — IAM secret key>"
+  DATABASE_URL: "postgresql://padaria:<senha>@<endpoint-rds>:5432/postgres"
+  S3_BUCKET: padaria-g1
+  SQS_QUEUE_URL: "https://sqs.us-east-1.amazonaws.com/<conta>/pedidos-g1"
+  ADMIN_PIN: "1234"                  # PIN da área /admin
+
+# ─────────────────────────────────────────────────────────────
+# Resumo dos gotchas que quebraram coisas durante o desenvolvimento
+# ─────────────────────────────────────────────────────────────
+gotchas:
+  - id: sdk-region-empty-string
+    servicos: [S3, SQS]
+    sintoma: "URLs geradas com domínio s3.nothing.amazonaws.com ou sqs.nothing.amazonaws.com"
+    causa: >
+      AWS SDK v3 inicializa o cliente no momento do import do módulo Next.js,
+      antes de .env.local estar carregado. process.env.AWS_REGION retorna ""
+      (string vazia). ?? e || não tratam string vazia — apenas undefined/null.
+    solucao: >
+      Hardcodar region: "us-east-1" diretamente no construtor do cliente,
+      nunca ler de process.env.AWS_REGION.
+    arquivos: [lib/s3.ts, lib/sqs.ts]
+
+  - id: iam-sqs-wrong-arn
+    servico: IAM
+    sintoma: "AccessDenied ao chamar SQS:SendMessage"
+    causa: >
+      Na policy inline do grupo IAM, o Resource do statement SQS estava com
+      o ARN do bucket S3 (arn:aws:s3:::padaria-g1) no lugar do ARN da fila
+      (arn:aws:sqs:us-east-1:...:pedidos-g1).
+    solucao: Corrigir o ARN no JSON da policy inline.
+
+  - id: rds-ssl-required
+    servico: RDS
+    sintoma: "error: no pg_hba.conf entry for host ... no encryption"
+    causa: RDS PostgreSQL exige SSL — rejeita conexões sem criptografia.
+    solucao: >
+      Adicionar ssl: { rejectUnauthorized: false } ao objeto de configuração
+      do pg.Pool em TODOS os lugares que conectam ao banco (app Next.js e Lambda).
+    arquivos: [lib/db.ts, lambdas/processar-pedido/index.mjs]
+
+  - id: lambda-placeholder-env
+    servico: Lambda
+    sintoma: "ENOTFOUND endpoint.rds.amazonaws.com"
+    causa: DATABASE_URL na Lambda ainda tinha o valor placeholder do template.
+    solucao: >
+      Console Lambda → Configuration → Environment variables → Edit.
+      Substituir o placeholder pela URL real do RDS.
+
+  - id: s3-cors-wildcard
+    servico: S3
+    sintoma: "Load failed" no upload de foto
+    causa: >
+      AllowedOrigins com "https://*" (wildcard) não funciona — AWS exige
+      URL exata ou padrão específico. Além disso, a região do cliente S3
+      estava como "nothing" (mesmo gotcha do sdk-region-empty-string).
+    solucao: >
+      1. Corrigir região do S3Client para "us-east-1" hardcoded.
+      2. Listar cada origem explicitamente no CORS do bucket.
