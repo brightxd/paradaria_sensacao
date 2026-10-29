@@ -235,12 +235,3 @@ Crie o tópico `pedido-confirmado-SEU-GRUPO` — Standard. Copie o ARN e preench
 3. SQS invoca Lambda `processar-pedido` → lê o JSON, calcula total, grava com `IfMatch` (idempotência) → publica no SNS
 4. SNS invoca Lambda `enviar-email` → formata e-mail → SES envia para o cliente
 5. Página `/pedidos` consulta `GET /api/pedidos` a cada 2s → status muda de `recebido` para `confirmado`
-
-## Respostas do enunciado
-
-**O que acontece se a Lambda `enviar-email` estiver fora do ar na hora do pedido?**
-O SNS tentará reenviar a mensagem para a Lambda por até 23 horas (política de retry padrão: backoff exponencial). Se a Lambda voltar durante esse período, o e-mail será enviado normalmente. A idempotência na `processar-pedido` garante que o pedido já está confirmado no S3, então não há risco de processamento duplo. Se o SNS esgotar as tentativas, a mensagem é descartada — o pedido segue confirmado no sistema, mas o cliente não recebe o e-mail. Para mitigar, configure uma DLQ no SNS ou um alarme no CloudWatch para a fila de mensagens mortas.
-
-## Limpeza após a entrega
-
-Apague, na ordem: Lambdas → tópico SNS → filas SQS → bucket S3 → usuários e grupo IAM.
